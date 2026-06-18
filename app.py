@@ -1,5 +1,5 @@
 import streamlit as st
-
+import pandas as pd
 from src.agent.downloader import download_solexs
 from src.agent.download_hel1os import download_hel1os
 
@@ -89,7 +89,28 @@ if st.button("Fetch Data"):
     hel_df = load_hel1os(
         date_str
     )
+    training_df = pd.merge_asof(
+    solex_df.sort_values("datetime"),
+    hel_df.sort_values("datetime"),
+    on="datetime",
+    direction="nearest",
+    tolerance=pd.Timedelta("1s")
+)
 
+    training_df = training_df.rename(
+    columns={
+        "counts_x": "solex_counts",
+        "counts_y": "hel_counts"
+    }
+)
+
+    training_df = training_df[
+    [
+        "datetime",
+        "solex_counts",
+        "hel_counts"
+    ]
+    ]
     # ---------------------
     # Plot
     # ---------------------
@@ -115,6 +136,16 @@ if st.button("Fetch Data"):
         fig,
         use_container_width=True
     )
+    csv = training_df.to_csv(
+    index=False
+)   .encode("utf-8")
+
+    st.download_button(
+    label="📥 Download Time Series Data",
+    data=csv,
+    file_name=f"{date_str}_timeseries.csv",
+    mime="text/csv"
+)
 
     st.write(
         f"SoLEXS Rows: {len(solex_df)}"
