@@ -1,8 +1,7 @@
 import streamlit as st
-import pandas as pd
+
 from src.agent.downloader import download_solexs
 from src.agent.download_hel1os import download_hel1os
-
 from src.agent.unzipper import extract_all
 
 from src.readers.solex_reader import load_solexs
@@ -11,6 +10,10 @@ from src.readers.helios_reader import load_hel1os
 from src.plots.plotter import build_dashboard
 
 
+# ==========================================
+# PAGE CONFIG
+# ==========================================
+
 st.set_page_config(
     page_title="ISRO Solar Dashboard",
     layout="wide"
@@ -18,9 +21,36 @@ st.set_page_config(
 
 st.title("☀️ Aditya-L1 Solar Dashboard")
 
+
+# ==========================================
+# SESSION STATE
+# ==========================================
+
+if "fig" not in st.session_state:
+    st.session_state.fig = None
+
+if "solex_df" not in st.session_state:
+    st.session_state.solex_df = None
+
+if "hel_df" not in st.session_state:
+    st.session_state.hel_df = None
+
+if "date_str" not in st.session_state:
+    st.session_state.date_str = None
+
+
+# ==========================================
+# DATE PICKER
+# ==========================================
+
 selected_date = st.date_input(
     "Select Observation Date"
 )
+
+
+# ==========================================
+# FETCH BUTTON
+# ==========================================
 
 if st.button("Fetch Data"):
 
@@ -33,7 +63,7 @@ if st.button("Fetch Data"):
     )
 
     # ---------------------
-    # Download SoLEXS
+    # DOWNLOAD SOLEXS
     # ---------------------
 
     status.info(
@@ -47,7 +77,7 @@ if st.button("Fetch Data"):
     )
 
     # ---------------------
-    # Download HEL1OS
+    # DOWNLOAD HEL1OS
     # ---------------------
 
     status.info(
@@ -61,7 +91,7 @@ if st.button("Fetch Data"):
     )
 
     # ---------------------
-    # Extract
+    # EXTRACT FILES
     # ---------------------
 
     status.info(
@@ -73,7 +103,7 @@ if st.button("Fetch Data"):
     extract_all()
 
     # ---------------------
-    # Read FITS
+    # LOAD DATA
     # ---------------------
 
     status.info(
@@ -89,9 +119,9 @@ if st.button("Fetch Data"):
     hel_df = load_hel1os(
         date_str
     )
-    
+
     # ---------------------
-    # Plot
+    # BUILD PLOT
     # ---------------------
 
     status.info(
@@ -111,47 +141,67 @@ if st.button("Fetch Data"):
         "Completed"
     )
 
+    # ---------------------
+    # SAVE TO SESSION STATE
+    # ---------------------
+
+    st.session_state.fig = fig
+    st.session_state.solex_df = solex_df
+    st.session_state.hel_df = hel_df
+    st.session_state.date_str = date_str
+
+
+# ==========================================
+# DISPLAY RESULTS
+# ==========================================
+
+if st.session_state.fig is not None:
+
     st.plotly_chart(
-        fig,
+        st.session_state.fig,
         use_container_width=True
     )
 
     st.subheader("Download Data")
 
-    solex_csv = solex_df.to_csv(
-    index=False
-    ).encode("utf-8")
-    
-    hel_csv = hel_df.to_csv(
-    index=False
-    ).encode("utf-8")
+    solex_csv = (
+        st.session_state.solex_df
+        .to_csv(index=False)
+        .encode("utf-8")
+    )
 
-    with st.sidebar:
-        
-        st.header("Downloads")
+    hel_csv = (
+        st.session_state.hel_df
+        .to_csv(index=False)
+        .encode("utf-8")
+    )
 
+    col1, col2 = st.columns(2)
 
-        st.download_button(
-        label="📥 Download SoLEXS Time Series",
-        data=solex_csv,
-        file_name=f"{date_str}_solexs.csv",
-        mime="text/csv"
-)
-
-   
+    with col1:
 
         st.download_button(
-        label="📥 Download HEL1OS Time Series",
-        data=hel_csv,
-        file_name=f"{date_str}_hel1os.csv",
-        mime="text/csv"
-)
-   
+            label="📥 Download SoLEXS CSV",
+            data=solex_csv,
+            file_name=f"{st.session_state.date_str}_solexs.csv",
+            mime="text/csv"
+        )
+
+    with col2:
+
+        st.download_button(
+            label="📥 Download HEL1OS CSV",
+            data=hel_csv,
+            file_name=f"{st.session_state.date_str}_hel1os.csv",
+            mime="text/csv"
+        )
+
+    st.markdown("---")
 
     st.write(
-        f"SoLEXS Rows: {len(solex_df)}"
+        f"**SoLEXS Rows:** {len(st.session_state.solex_df)}"
     )
 
     st.write(
-        f"HEL1OS Rows: {len(hel_df)}"
+        f"**HEL1OS Rows:** {len(st.session_state.hel_df)}"
     )
