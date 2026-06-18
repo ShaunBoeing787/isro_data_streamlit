@@ -141,11 +141,17 @@ if st.button("Fetch Data"):
 )   .encode("utf-8")
 
     st.download_button(
-    label="📥 Download Time Series Data",
-    data=csv,
-    file_name=f"{date_str}_timeseries.csv",
-    mime="text/csv"
+    "📥 Download SoLEXS CSV",
+    solex_df.to_csv(index=False),
+    file_name=f"{date_str}_solexs.csv"
 )
+
+    st.download_button(
+    "📥 Download HEL1OS CSV",
+    hel_df.to_csv(index=False),
+    file_name=f"{date_str}_hel1os.csv"
+)
+
 
     st.write(
         f"SoLEXS Rows: {len(solex_df)}"
