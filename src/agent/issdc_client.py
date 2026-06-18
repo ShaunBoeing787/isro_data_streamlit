@@ -16,8 +16,13 @@ class ISSDCClient:
     )
 
     def __init__(self):
+        try:
+            import streamlit as st
 
-        load_dotenv()
+            USERNAME = st.secrets["ISSDC_USERNAME"]
+            PASSWORD = st.secrets["ISSDC_PASSWORD"]
+        except Exception:
+            load_dotenv()
 
         self.username = os.getenv("ISSDC_USERNAME")
         self.password = os.getenv("ISSDC_PASSWORD")
